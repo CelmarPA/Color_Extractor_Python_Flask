@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Color Extractor</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">Color Extractor</h1>
+
+        <div style="text-align: center;">
+            {% if image_file %}
+                <img id="preview" src="{{ url_for('static', filename=image_file) }}" alt="Uploaded Image"
+                     style="max-width: 700px; height: auto; margin: 10px 0;">
+            {% else %}
+                <img id="preview" src="{{ url_for('static', filename='assets/images/test.jpg') }}" alt="Demo Image"
+                     style="max-width: 700px; height: auto; margin: 10px 0;">
+            {% endif %}
+        </div>
+        <form action="/get_image" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="imageInput" class="btn btn-primary">Select Image</label>
+                <input type="file" id="imageInput" name="image" style="display: none;" onchange="this.form.submit()">
+            </div>
+        </form>
+        <form action="/extract" method="post">
+            <input type="hidden" name="image_path" value="{{ image_path if image_path else 'static/assets/images/test.jpg' }}">
+
+            <div class="form-group">
+                <label>Number of Colors:</label>
+                <input type="number" name="colors" value="10" min="1" max="20">
+            </div>
+            <button type="submit">Extract Colors</button>
+        </form>
+
+        {% if colors %}
+          <h2 class="mt-4">Color Palette</h2>
+          <div class="palette">
+            {% for color, perc in colors.items() %}
+              <div class="color-box" style="background-color: {{ color }};" data-hex="{{ color }}">
+                <span class="color-hex" style="background-color: {{ color }};">{{ color }}</span>
+                <span class="color-perc" style="background-color: {{ color }};">{{ perc }}%</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+    </div>
+
+    <script>
+      function previewAndSubmit() {
+            const input = document.getElementById('imageInput');
+            const preview = document.getElementById('preview');
+
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+
+                    document.getElementById('uploadForm').submit();
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+      document.querySelectorAll('.color-box').forEach(box => {
+        box.addEventListener('click', () => {
+          const hex = box.getAttribute('data-hex');
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(hex).then(() => {
+              alert(`Color ${hex} copied to clipboard!`);
+            }).catch(err => {
+              console.error('Copy failed:', err);
+            });
+          } else {
+            // fallback for old browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = hex;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+              document.execCommand('copy');
+              alert(`Color ${hex} copied to clipboard!`);
+            } catch (err) {
+              console.error('Copy failed:', err);
+            }
+            document.body.removeChild(textarea);
+          }
+        });
+      });
+    </script>
+</body>
+</html>
